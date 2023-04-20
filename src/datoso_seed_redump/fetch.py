@@ -1,11 +1,13 @@
 
 import os
+import shutil
+import zipfile
+from datetime import datetime
 from html.parser import HTMLParser
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datoso_seed_redump import __preffix__
 
-from datoso.configuration import config, folder_helper, logger
 from datoso.configuration.folder_helper import Folders
 
 # TMP = 'tmp'
@@ -29,8 +31,8 @@ TYPES = ["datfile", "cues", "gdi", "sbi"]
 #     # delete old files
 #     os.system(f'rm -rf {TMP_REDUMP}/*')
 
-
 class MyHTMLParser(HTMLParser):
+    dats = {}
     rootpath = MAIN_URL
     types = TYPES
     folder_helper = None
@@ -45,26 +47,25 @@ class MyHTMLParser(HTMLParser):
                     output = hrefsplit[1]
                     if 'bios' in href:
                         output = 'bios'
-                    savefile(self.folder_helper, output, self.rootpath+href)
+                    # savefile(self.folder_helper, output, self.rootpath+href)
+                    self.add_to_dats(output, self.rootpath+href)
 
+    def add_to_dats(self, folder, href):
+        self.dats[href] = folder
 
-def savefile(folder_helper, output, href):
-    with open(os.path.join(folder_helper.download, f'{output}.txt'), 'a+') as fp:
-        fp.write(href+"\n")
+def download_dats(folder_helper):
+    def download_dat(href, folder):
+        print(f'Downloading {href}')
+        tmp_filename, headers = urllib.request.urlretrieve(href)
+        local_filename = os.path.join(folder_helper.dats, folder, headers.get_filename())
+        shutil.move(tmp_filename, local_filename)
+        if folder in ['datfile']:
+            with zipfile.ZipFile(local_filename, 'r') as zip_ref:
+                zip_ref.extractall(os.path.join(folder_helper.dats, folder))
+            os.remove(local_filename)
 
-
-def main(folder_helper):
-    def download_dats(file):
-        new_path = os.path.join(folder_helper.dats, file)
-        os.makedirs(new_path, exist_ok=True)
-        os.system(f'cd {new_path} && aria2c --file-allocation=prealloc -i ../../{file}.txt')
-        # extract dat files
-        if file in ['datfile']:
-            os.system(f'cd {new_path} && unzip -o \'*.zip\'')
-            os.system(f'cd {new_path} && rm *.zip')
-
+    print('Downloading Redump HTML')
     red = urllib.request.urlopen(DOWNLOAD_URL)
-
     redumphtml = red.read()
 
     print('Parsing Redump HTML')
@@ -73,20 +74,23 @@ def main(folder_helper):
     parser.feed(str(redumphtml))
 
     print('Downloading new dats')
-    NEWTYPES = TYPES+['bios']
 
     with ThreadPoolExecutor(max_workers=10) as executor:
-        for file in NEWTYPES:
-            executor.submit(download_dats, file)
+        for href, folder in parser.dats.items():
+            executor.submit(download_dat, href, folder)
 
-    # zip files in TMP_DIR with 7z
     print('Zipping files')
-    os.system(f'cd {folder_helper.download} && 7z a -tzip redump.zip redump')
+    backup_daily_name = f'redump-{datetime.now().strftime("%Y-%m-%d")}.zip'
+    with zipfile.ZipFile(os.path.join(folder_helper.backup, backup_daily_name), 'w') as zip_ref:
+        for root, dirs, files in os.walk(folder_helper.dats):
+            for file in files:
+                zip_ref.write(os.path.join(root, file), arcname=os.path.join(root.replace(folder_helper.dats, ''), file), compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
 
 def fetch():
     # mktmpdirs()
-    folder_helper = Folders(seed=__preffix__)
+    NEWTYPES = TYPES+['bios']
+    folder_helper = Folders(seed=__preffix__, extras=NEWTYPES)
     folder_helper.clean_dats()
     folder_helper.create_all()
     # clean()
-    main(folder_helper)
+    download_dats(folder_helper)
