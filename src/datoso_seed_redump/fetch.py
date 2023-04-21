@@ -10,26 +10,9 @@ from datoso_seed_redump import __preffix__
 
 from datoso.configuration.folder_helper import Folders
 
-# TMP = 'tmp'
-# WORK_FOLDER = os.getenv('WORK_FOLDER', os.getcwd())
-# SEED_NAME = os.getenv('SEED_NAME', os.path.basename(os.getcwd()))
-# TMP_DIR = os.path.join(WORK_FOLDER, os.getenv('TMP_FOLDER', 'tmp'))
-# TMP_REDUMP = os.path.join(TMP_DIR, SEED_NAME)
-# TMP_DATS = os.path.join(TMP_REDUMP, 'dats')
-
 MAIN_URL = 'http://redump.org'
 DOWNLOAD_URL = 'http://redump.org/downloads/'
 TYPES = ["datfile", "cues", "gdi", "sbi"]
-
-
-# def mktmpdirs():
-#     os.makedirs(TMP_DIR, exist_ok=True)
-#     os.makedirs(TMP_REDUMP, exist_ok=True)
-#     os.makedirs(TMP_DATS, exist_ok=True)
-
-# def clean():
-#     # delete old files
-#     os.system(f'rm -rf {TMP_REDUMP}/*')
 
 class MyHTMLParser(HTMLParser):
     dats = {}
@@ -47,15 +30,16 @@ class MyHTMLParser(HTMLParser):
                     output = hrefsplit[1]
                     if 'bios' in href:
                         output = 'bios'
-                    # savefile(self.folder_helper, output, self.rootpath+href)
                     self.add_to_dats(output, self.rootpath+href)
 
     def add_to_dats(self, folder, href):
         self.dats[href] = folder
 
 def download_dats(folder_helper):
+    done = 0
     def download_dat(href, folder):
-        print(f'Downloading {href}')
+        nonlocal done
+        # print(f'Downloading {href}')
         tmp_filename, headers = urllib.request.urlretrieve(href)
         local_filename = os.path.join(folder_helper.dats, folder, headers.get_filename())
         shutil.move(tmp_filename, local_filename)
@@ -63,6 +47,8 @@ def download_dats(folder_helper):
             with zipfile.ZipFile(local_filename, 'r') as zip_ref:
                 zip_ref.extractall(os.path.join(folder_helper.dats, folder))
             os.remove(local_filename)
+        done += 1
+        print_progress(done)
 
     print('Downloading Redump HTML')
     red = urllib.request.urlopen(DOWNLOAD_URL)
@@ -74,12 +60,16 @@ def download_dats(folder_helper):
     parser.feed(str(redumphtml))
 
     print('Downloading new dats')
+    total_dats = len(parser.dats)
+
+    def print_progress(done):
+        print(f' {done}/{total_dats} ({round(done/total_dats*100, 2)}%)', end='\r')
 
     with ThreadPoolExecutor(max_workers=10) as executor:
         for href, folder in parser.dats.items():
             executor.submit(download_dat, href, folder)
 
-    print('Zipping files')
+    print('\nZipping files for backup')
     backup_daily_name = f'redump-{datetime.now().strftime("%Y-%m-%d")}.zip'
     with zipfile.ZipFile(os.path.join(folder_helper.backup, backup_daily_name), 'w') as zip_ref:
         for root, dirs, files in os.walk(folder_helper.dats):
@@ -87,10 +77,8 @@ def download_dats(folder_helper):
                 zip_ref.write(os.path.join(root, file), arcname=os.path.join(root.replace(folder_helper.dats, ''), file), compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
 
 def fetch():
-    # mktmpdirs()
     NEWTYPES = TYPES+['bios']
     folder_helper = Folders(seed=__preffix__, extras=NEWTYPES)
     folder_helper.clean_dats()
     folder_helper.create_all()
-    # clean()
     download_dats(folder_helper)
