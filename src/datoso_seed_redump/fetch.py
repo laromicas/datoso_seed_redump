@@ -6,9 +6,8 @@ from datetime import datetime
 from html.parser import HTMLParser
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
-from datoso_seed_redump import __preffix__
-
 from datoso.configuration.folder_helper import Folders
+from datoso_seed_redump import __preffix__
 
 MAIN_URL = 'http://redump.org'
 DOWNLOAD_URL = 'http://redump.org/downloads/'
@@ -18,7 +17,6 @@ class MyHTMLParser(HTMLParser):
     dats = {}
     rootpath = MAIN_URL
     types = TYPES
-    folder_helper = None
 
     def handle_starttag(self, tag, attrs):
         if tag == 'a':
@@ -56,14 +54,13 @@ def download_dats(folder_helper):
 
     print('Parsing Redump HTML')
     parser = MyHTMLParser()
-    parser.folder_helper = folder_helper
     parser.feed(str(redumphtml))
 
     print('Downloading new dats')
     total_dats = len(parser.dats)
 
     def print_progress(done):
-        print(f' {done}/{total_dats} ({round(done/total_dats*100, 2)}%)', end='\r')
+        print(f'  {done}/{total_dats} ({round(done/total_dats*100, 2)}%)', end='\r')
 
     with ThreadPoolExecutor(max_workers=10) as executor:
         for href, folder in parser.dats.items():
