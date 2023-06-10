@@ -7,7 +7,9 @@ from html.parser import HTMLParser
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datoso.configuration.folder_helper import Folders
+from datoso.helpers import Bcolors
 from datoso_seed_redump import __preffix__
+import logging
 
 MAIN_URL = 'http://redump.org'
 DOWNLOAD_URL = 'http://redump.org/downloads/'
@@ -35,10 +37,15 @@ class MyHTMLParser(HTMLParser):
 
 def download_dats(folder_helper):
     done = 0
-    def download_dat(href, folder):
+    def download_dat(href, folder): #TODO: change to asyncio
         nonlocal done
         # print(f'Downloading {href}')
-        tmp_filename, headers = urllib.request.urlretrieve(href)
+        try:
+            tmp_filename, headers = urllib.request.urlretrieve(href)
+        except Exception as e:
+            logging.error(f'Error downloading {DOWNLOAD_URL}: {e}')
+            print(f'Error downloading {href}')
+            return
         local_filename = os.path.join(folder_helper.dats, folder, headers.get_filename())
         shutil.move(tmp_filename, local_filename)
         if folder in ['datfile']:
@@ -49,7 +56,12 @@ def download_dats(folder_helper):
         print_progress(done)
 
     print('Downloading Redump HTML')
-    red = urllib.request.urlopen(DOWNLOAD_URL)
+    try:
+        red = urllib.request.urlopen(DOWNLOAD_URL)
+    except Exception as e:
+        logging.error(f'Error downloading {DOWNLOAD_URL}: {e}')
+        print(f'{Bcolors.ERROR}Error downloading {DOWNLOAD_URL}. Skipping redump.{Bcolors.ENDC}')
+        return
     redumphtml = red.read()
 
     print('Parsing Redump HTML')
