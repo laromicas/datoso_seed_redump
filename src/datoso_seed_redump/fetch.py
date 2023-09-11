@@ -1,13 +1,13 @@
 
 import os
-import shutil
 import zipfile
 from datetime import datetime
 from html.parser import HTMLParser
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datoso.configuration.folder_helper import Folders
-from datoso.helpers import Bcolors
+from datoso.configuration import config
+from datoso.helpers import Bcolors, downloader
 from datoso_seed_redump import __preffix__
 import logging
 
@@ -39,15 +39,7 @@ def download_dats(folder_helper):
     done = 0
     def download_dat(href, folder): #TODO: change to asyncio
         nonlocal done
-        # print(f'Downloading {href}')
-        try:
-            tmp_filename, headers = urllib.request.urlretrieve(href)
-        except Exception as e:
-            logging.error(f'Error downloading {DOWNLOAD_URL}: {e}')
-            print(f'Error downloading {href}')
-            return
-        local_filename = os.path.join(folder_helper.dats, folder, headers.get_filename())
-        shutil.move(tmp_filename, local_filename)
+        local_filename = downloader(url=href, destination=os.path.join(folder_helper.dats, folder), filename_from_headers=True)
         if folder in ['datfile']:
             with zipfile.ZipFile(local_filename, 'r') as zip_ref:
                 zip_ref.extractall(os.path.join(folder_helper.dats, folder))
@@ -74,9 +66,12 @@ def download_dats(folder_helper):
     def print_progress(done):
         print(f'  {done}/{total_dats} ({round(done/total_dats*100, 2)}%)', end='\r')
 
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        for href, folder in parser.dats.items():
-            executor.submit(download_dat, href, folder)
+    with ThreadPoolExecutor(max_workers=int(config.get('DOWNLOAD', 'Workers', fallback=10))) as executor:
+        futures = [
+            executor.submit(download_dat, href, folder) for href, folder in parser.dats.items()
+        ]
+        for future in futures:
+            future.result()
 
     print('\nZipping files for backup')
     backup_daily_name = f'redump-{datetime.now().strftime("%Y-%m-%d")}.zip'
