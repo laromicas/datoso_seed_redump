@@ -38,6 +38,9 @@ actions = {
             "folder": "{dat_destination}"
         },
         {
+            "action": "MarkMias"
+        },
+        {
             "action": "SaveToDatabase"
         }
     ],
