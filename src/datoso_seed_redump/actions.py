@@ -1,21 +1,23 @@
-from datoso_seed_redump.dats import RedumpDat, RedumpBiosDat
+from datoso_seed_redump.dats import RedumpBiosDat, RedumpDat
+
+# ruff: noqa: ERA001
 
 actions = {
-    "{dat_origin}/bios": [
+    '{dat_origin}/bios': [
         {
-            "action": "LoadDatFile",
-            "_class": RedumpBiosDat
+            'action': 'LoadDatFile',
+            '_class': RedumpBiosDat,
         },
         {
-            "action": "DeleteOld"
+            'action': 'DeleteOld',
         },
         {
-            "action": "Copy",
-            "folder": "{dat_destination}"
+            'action': 'Copy',
+            'folder': '{dat_destination}',
         },
         {
-            "action": "SaveToDatabase"
-        }
+            'action': 'SaveToDatabase',
+        },
     ],
     # "{dat_origin}/cues": [
     #     {
@@ -24,27 +26,27 @@ actions = {
     #         "destination": "tmp/cues"
     #     }
     # ],
-    "{dat_origin}/gdi": [],
-    "{dat_origin}/datfile": [
+    '{dat_origin}/gdi': [],
+    '{dat_origin}/datfile': [
         {
-            "action": "LoadDatFile",
-            "_class": RedumpDat
+            'action': 'LoadDatFile',
+            '_class': RedumpDat,
         },
         {
-            "action": "DeleteOld"
+            'action': 'DeleteOld',
         },
         {
-            "action": "Copy",
-            "folder": "{dat_destination}"
+            'action': 'Copy',
+            'folder': '{dat_destination}',
         },
         {
-            "action": "MarkMias"
+            'action': 'MarkMias',
         },
         {
-            "action": "SaveToDatabase"
-        }
+            'action': 'SaveToDatabase',
+        },
     ],
-    "{dat_origin}/sbi": []
+    '{dat_origin}/sbi': [],
 }
 
 def get_actions():
