@@ -22,11 +22,20 @@ TYPES = ['datfile', 'cues', 'gdi', 'sbi']
 NEWTYPES = [*TYPES, 'bios']
 
 class MyHTMLParser(HTMLParser):
+    """A custom HTML parser for parsing Redump HTML."""
     dats: dict | None = None
     rootpath = MAIN_URL
     types = TYPES
 
-    def handle_starttag(self, tag, attrs):
+    def handle_starttag(self, tag: str, attrs: dict) -> None:
+        """Handle the start tag of an HTML element.
+
+        Args:
+        ----
+            tag (str): The name of the tag.
+            attrs (dict): A dictionary of the tag's attributes.
+
+        """
         if tag == 'a':
             taga = dict(attrs)
             if 'href' in taga:
@@ -57,8 +66,8 @@ def download_dats(folder_helper):
 
     print('Downloading Redump HTML')
     try:
-        red = urllib.request.urlopen(DOWNLOAD_URL)
-    except Exception as e:
+        red = urllib.request.urlopen(DOWNLOAD_URL)  # noqa: S310
+    except Exception:
         logging.exception('Error downloading %s', DOWNLOAD_URL)
         print(f'{Bcolors.ERROR}Error downloading {DOWNLOAD_URL}. Skipping redump.{Bcolors.ENDC}')
         return
@@ -86,7 +95,8 @@ def download_dats(folder_helper):
     with zipfile.ZipFile(folder_helper.backup / backup_daily_name, 'w') as zip_ref:
         for root, _, files in os.walk(folder_helper.dats):
             for file in files:
-                zip_ref.write(Path(root) / file, arcname=Path(root).relative_to(folder_helper.dats) / file, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
+                zip_ref.write(Path(root) / file, arcname=Path(root).relative_to(folder_helper.dats) / file,
+                              compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
 
 def fetch():
     folder_helper = Folders(seed=__prefix__, extras=NEWTYPES)
