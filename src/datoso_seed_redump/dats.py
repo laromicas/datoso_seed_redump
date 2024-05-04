@@ -4,6 +4,7 @@ import re
 from datoso.configuration import config
 from datoso.repositories.dat import ClrMameProDatFile, XMLDatFile
 
+EXPECTED_NAME_ARRAY_LENGTH = 2
 
 class RedumpDat(XMLDatFile):
     """Redump XML Dat class."""
@@ -12,7 +13,6 @@ class RedumpDat(XMLDatFile):
 
     def initial_parse(self) -> list:
         """Parse the dat file."""
-        # pylint: disable=R0801
         name = self.name
 
         suffixes = re.findall(r'\(.*?\)', self.full_name)
@@ -24,8 +24,7 @@ class RedumpDat(XMLDatFile):
 
         if len(name_array) == 1:
             name_array.insert(0, None)
-
-        if len(name_array) > 2:
+        elif len(name_array) > EXPECTED_NAME_ARRAY_LENGTH:
             name_array = ['-'.join(name_array[0:-1]), name_array[-1:][0]]
 
         company, system = name_array
