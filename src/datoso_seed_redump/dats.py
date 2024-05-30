@@ -2,7 +2,7 @@
 import re
 
 from datoso.configuration import config
-from datoso.repositories.dat import ClrMameProDatFile, XMLDatFile
+from datoso.repositories.dat_file import ClrMameProDatFile, XMLDatFile
 
 EXPECTED_NAME_ARRAY_LENGTH = 2
 

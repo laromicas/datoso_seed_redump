@@ -10,6 +10,7 @@ actions = {
         },
         {
             'action': 'DeleteOld',
+            'folder': '{dat_destination}',
         },
         {
             'action': 'Copy',
@@ -34,6 +35,7 @@ actions = {
         },
         {
             'action': 'DeleteOld',
+            'folder': '{dat_destination}',
         },
         {
             'action': 'Copy',
