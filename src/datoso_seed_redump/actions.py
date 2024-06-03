@@ -1,3 +1,4 @@
+"""""Actions for the Redump seed."""
 from datoso_seed_redump.dats import RedumpBiosDat, RedumpDat
 
 # ruff: noqa: ERA001
@@ -51,5 +52,6 @@ actions = {
     '{dat_origin}/sbi': [],
 }
 
-def get_actions():
+def get_actions() -> dict:
+    """Get the actions dictionary."""
     return actions

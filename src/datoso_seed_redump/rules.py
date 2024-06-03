@@ -1,3 +1,4 @@
+"""Rules for the Redump seed."""
 from datoso_seed_redump.dats import RedumpBiosDat, RedumpDat
 
 rules = [
@@ -47,5 +48,6 @@ rules = [
 ]
 
 
-def get_rules():
+def get_rules() -> list:
+    """Get the rules."""
     return rules

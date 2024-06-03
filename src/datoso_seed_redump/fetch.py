@@ -1,4 +1,4 @@
-
+"""Fetch and download DAT files."""
 import logging
 import os
 import urllib.request
@@ -23,11 +23,12 @@ NEWTYPES = [*TYPES, 'bios']
 
 class MyHTMLParser(HTMLParser):
     """A custom HTML parser for parsing Redump HTML."""
+
     dats: dict | None = None
     rootpath = MAIN_URL
     types = TYPES
 
-    def handle_starttag(self, tag: str, attrs: dict) -> None:
+    def handle_starttag(self, tag: str, attrs: list) -> None:
         """Handle the start tag of an HTML element.
 
         Args:
@@ -47,14 +48,16 @@ class MyHTMLParser(HTMLParser):
                         output = 'bios'
                     self.add_to_dats(output, self.rootpath+href)
 
-    def add_to_dats(self, folder, href):
+    def add_to_dats(self, folder: str, href: str) -> None:
+        """Add a DAT file to the dats dictionary."""
         if self.dats is None:
             self.dats = {}
         self.dats[href] = folder
 
-def download_dats(folder_helper):
+def download_dats(folder_helper: Folders) -> None:
+    """Download DAT files from Redump.org."""
     done = 0
-    def download_dat(href, folder): # TODO(laromicas): change to asyncio
+    def download_dat(href: str, folder: str) -> None: # TODO(laromicas): change to asyncio
         nonlocal done
         local_filename = downloader(url=href, destination=folder_helper.dats / folder, filename_from_headers=True)
         if folder in ['datfile']:
@@ -80,7 +83,7 @@ def download_dats(folder_helper):
     print('Downloading new dats')
     total_dats = len(parser.dats)
 
-    def print_progress(done):
+    def print_progress(done: int) -> None:
         print(f'  {done}/{total_dats} ({round(done/total_dats*100, 2)}%)', end='\r')
 
     with ThreadPoolExecutor(max_workers=int(config.get('DOWNLOAD', 'Workers', fallback=10))) as executor:
@@ -98,7 +101,8 @@ def download_dats(folder_helper):
                 zip_ref.write(Path(root) / file, arcname=Path(root).relative_to(folder_helper.dats) / file,
                               compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
 
-def fetch():
+def fetch() -> None:
+    """Fetch and download DAT files."""
     folder_helper = Folders(seed=__prefix__, extras=NEWTYPES)
     folder_helper.clean_dats()
     folder_helper.create_all()
