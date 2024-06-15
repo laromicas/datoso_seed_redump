@@ -1,18 +1,18 @@
-"""
-    ReDump Dat classes to parse different types of dat files.
-"""
+"""ReDump Dat classes to parse different types of dat files."""
 import re
-from datoso.repositories.dat import ClrMameProDatFile, XMLDatFile
-from datoso.configuration import config
 
+from datoso.configuration import config
+from datoso.repositories.dat_file import ClrMameProDatFile, XMLDatFile
+
+EXPECTED_NAME_ARRAY_LENGTH = 2
 
 class RedumpDat(XMLDatFile):
-    """ Redump XML Dat class. """
+    """Redump XML Dat class."""
+
     seed: str = 'redump'
 
     def initial_parse(self) -> list:
-        """ Parse the dat file. """
-        # pylint: disable=R0801
+        """Parse the dat file."""
         name = self.name
 
         suffixes = re.findall(r'\(.*?\)', self.full_name)
@@ -24,8 +24,7 @@ class RedumpDat(XMLDatFile):
 
         if len(name_array) == 1:
             name_array.insert(0, None)
-
-        if len(name_array) > 2:
+        elif len(name_array) > EXPECTED_NAME_ARRAY_LENGTH:
             name_array = ['-'.join(name_array[0:-1]), name_array[-1:][0]]
 
         company, system = name_array
@@ -38,33 +37,34 @@ class RedumpDat(XMLDatFile):
         self.extra_configs(find_system)
 
         if self.modifier or self.system_type:
-            self.preffix = config.get('PREFFIXES', self.modifier or self.system_type, fallback='')
+            self.prefix = config.get('PREFIXES', self.modifier or self.system_type, fallback='')
         else:
-            self.preffix = None
+            self.prefix = None
 
 
-        return [self.preffix, self.company, self.system, self.suffix, self.get_date()]
+        return [self.prefix, self.company, self.system, self.suffix, self.get_date()]
 
     def get_date(self) -> str:
-        """ Get the date from the dat file. """
+        """Get the date from the dat file."""
         if self.full_name:
             result = re.findall(r'\(.*?\)', self.full_name)
             if result:
                 self.date = result[len(result)-1][1:-1]
         elif self.file:
-            result = re.findall(r'\(.*?\)', self.file)
+            result = re.findall(r'\(.*?\)', str(self.file))
             if result:
                 self.date = result[len(result)-1][1:-1]
         return self.date
 
 
 class RedumpBiosDat(ClrMameProDatFile):
-    """ Redump BIOS Dat class. """
+    """Redump BIOS Dat class."""
+
     system_type: str = 'BIOS'
     seed: str = 'redump'
 
     def initial_parse(self) -> list:
-        """ Parse the dat file. """
+        """Parse the dat file."""
         # pylint: disable=R0801
         name = self.name
 
@@ -85,20 +85,20 @@ class RedumpBiosDat(ClrMameProDatFile):
         self.suffixes = suffixes
 
         if self.modifier or self.system_type:
-            self.preffix = config.get('PREFFIXES', self.modifier or self.system_type, fallback='')
+            self.prefix = config.get('PREFIXES', self.modifier or self.system_type, fallback='')
         else:
-            self.preffix = None
+            self.prefix = None
 
-        return [self.preffix, self.company, self.system, self.suffix, self.get_date()]
+        return [self.prefix, self.company, self.system, self.suffix, self.get_date()]
 
     def get_date(self) -> str:
-        """ Get the date from the dat file. """
+        """Get the date from the dat file."""
         if self.full_name:
             result = re.findall(r'\(.*?\)', self.full_name)
             if result:
                 self.date = result[1][1:-1]
         elif self.file:
-            result = re.findall(r'\(.*?\)', self.file)
+            result = re.findall(r'\(.*?\)', str(self.file))
             if result:
                 self.date = result[1][1:-1]
         return self.date
