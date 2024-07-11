@@ -59,7 +59,9 @@ def download_dats(folder_helper: Folders) -> None:
     done = 0
     def download_dat(href: str, folder: str) -> None: # TODO(laromicas): change to asyncio
         nonlocal done
-        local_filename = downloader(url=href, destination=folder_helper.dats / folder, filename_from_headers=True)
+        download_utility = config.get('REDUMP', 'DownloadUtility', fallback='wget')
+        local_filename = downloader(url=href, destination=folder_helper.dats / folder,
+                                    filename_from_headers=True, downloader=download_utility)
         if folder in ['datfile']:
             with zipfile.ZipFile(local_filename, 'r') as zip_ref:
                 zip_ref.extractall(folder_helper.dats / folder)
