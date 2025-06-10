@@ -22,6 +22,13 @@ class RedumpDat(XMLDatFile):
         if name_array[0] == 'Arcade':
             self.modifier = name_array.pop(0)
 
+        expected_suffixes = ['BIOS Images (DoM Version)', 'Disc Keys', 'Disc Keys TXT','GDI Files', 'SBI Subchannels']
+
+        if any(x in name_array for x in expected_suffixes):
+            for suffix in expected_suffixes:
+                if suffix in name_array:
+                    name_array.remove(suffix)
+                    suffixes.append(suffix)
         if len(name_array) == 1:
             name_array.insert(0, None)
         elif len(name_array) > EXPECTED_NAME_ARRAY_LENGTH:
@@ -40,8 +47,6 @@ class RedumpDat(XMLDatFile):
             self.prefix = config.get('PREFIXES', self.modifier or self.system_type, fallback='')
         else:
             self.prefix = None
-
-
         return [self.prefix, self.company, self.system, self.suffix, self.get_date()]
 
     def get_date(self) -> str:

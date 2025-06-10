@@ -19,6 +19,12 @@ rules = [
                 'value': 'BIOS Images',
                 'case_sensitive': False,
             },
+            {
+                'key': 'description',
+                'operator': 'not_contains',
+                'value': 'DoM Version',
+                'case_sensitive': False,
+            },
         ],
     },
     {
