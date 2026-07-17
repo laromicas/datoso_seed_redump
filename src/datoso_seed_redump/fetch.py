@@ -9,15 +9,18 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 from dateutil import tz
-
 from datoso.configuration import config
 from datoso.configuration.folder_helper import Folders
 from datoso.helpers import Bcolors
 from datoso.helpers.download import downloader
+
 from datoso_seed_redump import __prefix__
 
-MAIN_URL = 'http://redump.org'
-DOWNLOAD_URL = 'http://redump.org/downloads/'
+# OLD_MAIN_URL = 'http://redump.org'
+# OLD_DOWNLOAD_URL = 'http://redump.org/downloads/'
+MAIN_URL = 'https://redump.info'
+DOWNLOAD_URL = 'https://redump.info/downloads/'
+
 TYPES = ['datfile', 'cues', 'gdi', 'sbi']
 NEWTYPES = [*TYPES, 'bios']
 
@@ -46,6 +49,11 @@ class MyHTMLParser(HTMLParser):
                     output = hrefsplit[1]
                     if 'bios' in href:
                         output = 'bios'
+                    if output == 'datfile':
+                        if config.getboolean('REDUMP', 'SerialVersion', fallback=True) and 'serial,version' not in href:
+                            return
+                        if not config.getboolean('REDUMP', 'SerialVersion', fallback=True) and 'serial,version' in href:
+                            return
                     self.add_to_dats(output, self.rootpath+href)
 
     def add_to_dats(self, folder: str, href: str) -> None:

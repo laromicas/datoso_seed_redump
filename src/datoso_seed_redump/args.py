@@ -21,4 +21,5 @@ def init_config() -> None:
     if not config.has_section('REDUMP'):
         config['REDUMP'] = {
             'DownloadUtility': 'wget',
+            'SerialVersion': 'true',
         }
