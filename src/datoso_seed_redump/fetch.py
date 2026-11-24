@@ -12,7 +12,7 @@ from dateutil import tz
 from datoso.configuration import config
 from datoso.configuration.folder_helper import Folders
 from datoso.helpers import Bcolors
-from datoso.helpers.download import downloader
+from datoso.helpers.download import DownloadProgress, downloader
 
 from datoso_seed_redump import __prefix__
 
@@ -64,18 +64,14 @@ class MyHTMLParser(HTMLParser):
 
 def download_dats(folder_helper: Folders) -> None:
     """Download DAT files from Redump.org."""
-    done = 0
     def download_dat(href: str, folder: str) -> None: # TODO(laromicas): change to asyncio
-        nonlocal done
         download_utility = config.get('REDUMP', 'DownloadUtility', fallback='wget')
         local_filename = downloader(url=href, destination=folder_helper.dats / folder,
-                                    filename_from_headers=True, downloader=download_utility)
+                                    filename_from_headers=True, downloader=download_utility, progress=progress)
         if folder in ['datfile']:
             with zipfile.ZipFile(local_filename, 'r') as zip_ref:
                 zip_ref.extractall(folder_helper.dats / folder)
             Path.unlink(local_filename)
-        done += 1
-        print_progress(done)
 
     print('Downloading Redump HTML')
     try:
@@ -93,17 +89,16 @@ def download_dats(folder_helper: Folders) -> None:
     print('Downloading new dats')
     total_dats = len(parser.dats)
 
-    def print_progress(done: int) -> None:
-        print(f'  {done}/{total_dats} ({round(done/total_dats*100, 2)}%)', end='\r')
-
-    with ThreadPoolExecutor(max_workers=int(config.get('DOWNLOAD', 'Workers', fallback=10))) as executor:
+    workers = int(config.get('DOWNLOAD', 'Workers', fallback=10))
+    with DownloadProgress(total=total_dats, description=f'{total_dats} DAT file(s)') as progress, \
+            ThreadPoolExecutor(max_workers=workers) as executor:
         futures = [
             executor.submit(download_dat, href, folder) for href, folder in parser.dats.items()
         ]
         for future in futures:
             future.result()
 
-    print('\nZipping files for backup')
+    print('Zipping files for backup')
     backup_daily_name = f'redump-{datetime.now(tz.tzlocal()).strftime("%Y-%m-%d")}.zip'
     with zipfile.ZipFile(folder_helper.backup / backup_daily_name, 'w') as zip_ref:
         for root, _, files in os.walk(folder_helper.dats):

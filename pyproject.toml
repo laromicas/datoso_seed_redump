@@ -22,7 +22,7 @@ classifiers = [
     'Topic :: System :: Emulators',
 ]
 dependencies = [
-    "datoso>=1.1.0",
+    "datoso>=1.3.0",
 ]
 dynamic = ["version"]
 
